@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>風險分析評估</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --critical: #d32f2f;
@@ -28,7 +27,7 @@
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
         }
         
@@ -50,35 +49,43 @@
             margin-top: 30px;
         }
         
-        .content-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 30px;
-            margin-bottom: 40px;
+        .risk-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
         }
         
-        .matrix-container {
-            flex: 1;
-            min-width: 300px;
+        .summary-card {
             background: white;
             border-radius: 12px;
             padding: 25px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            text-align: center;
         }
         
-        .matrix-canvas {
-            width: 100%;
-            height: 500px;
-            margin-top: 20px;
+        .summary-value {
+            font-size: 3rem;
+            font-weight: 800;
+            margin: 10px 0;
         }
+        
+        .summary-label {
+            font-size: 1.2rem;
+            color: #666;
+        }
+        
+        .critical-count .summary-value { color: var(--critical); }
+        .high-count .summary-value { color: var(--high); }
+        .medium-count .summary-value { color: var(--medium); }
+        .low-count .summary-value { color: var(--low); }
         
         .risk-details {
-            flex: 1;
-            min-width: 300px;
             background: white;
             border-radius: 12px;
             padding: 25px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            margin-bottom: 40px;
         }
         
         .risk-list {
@@ -86,80 +93,100 @@
         }
         
         .risk-item {
-            padding: 15px;
-            margin-bottom: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
             border-radius: 8px;
             border-left: 6px solid #ccc;
             background: #f9f9f9;
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
         
         .risk-item:hover {
             transform: translateX(5px);
             background: #f0f7ff;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
         }
         
         .risk-item.critical {
             border-left-color: var(--critical);
+            background: linear-gradient(to right, rgba(211, 47, 47, 0.05), #f9f9f9);
         }
         
         .risk-item.high {
             border-left-color: var(--high);
+            background: linear-gradient(to right, rgba(245, 124, 0, 0.05), #f9f9f9);
         }
         
         .risk-item.medium {
             border-left-color: var(--medium);
+            background: linear-gradient(to right, rgba(251, 192, 45, 0.05), #f9f9f9);
         }
         
         .risk-item.low {
             border-left-color: var(--low);
+            background: linear-gradient(to right, rgba(56, 142, 60, 0.05), #f9f9f9);
+        }
+        
+        .risk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
         }
         
         .risk-title {
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             font-weight: 700;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
         }
         
         .risk-score {
             font-weight: 800;
-            font-size: 1.3rem;
+            font-size: 1.8rem;
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: white;
         }
         
+        .critical .risk-score { background-color: var(--critical); }
+        .high .risk-score { background-color: var(--high); }
+        .medium .risk-score { background-color: var(--medium); }
+        .low .risk-score { background-color: var(--low); }
+        
         .risk-description {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             color: #555;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            line-height: 1.5;
         }
         
         .risk-metrics {
             display: flex;
             justify-content: space-between;
-            font-size: 1rem;
+            font-size: 1.1rem;
             color: #666;
+            background: rgba(255,255,255,0.7);
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
         }
         
-        .legend {
+        .metric-item {
             display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .legend-item {
-            display: flex;
+            flex-direction: column;
             align-items: center;
-            font-weight: 600;
+            flex: 1;
         }
         
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            margin-right: 8px;
+        .metric-value {
+            font-weight: 800;
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #777;
         }
         
         .priority-table {
@@ -167,10 +194,11 @@
             border-collapse: collapse;
             margin-top: 20px;
             font-size: 1.1rem;
+            margin-bottom: 40px;
         }
         
         .priority-table th, .priority-table td {
-            padding: 15px;
+            padding: 18px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
@@ -179,6 +207,8 @@
             background: #1a237e;
             color: white;
             font-weight: 700;
+            position: sticky;
+            top: 0;
         }
         
         .priority-table tr:nth-child(even) {
@@ -190,11 +220,14 @@
         }
         
         .priority-badge {
-            padding: 4px 12px;
+            padding: 8px 16px;
             border-radius: 20px;
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 1rem;
             color: white;
+            display: inline-block;
+            min-width: 100px;
+            text-align: center;
         }
         
         .priority-1 { background: var(--critical); }
@@ -202,10 +235,18 @@
         .priority-3 { background: var(--medium); }
         .priority-4 { background: #388e3c; }
         
+        .risk-level-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: white;
+        }
+        
         .pm-notes {
             background: #e8f5e9;
             border-left: 6px solid #388e3c;
-            padding: 20px;
+            padding: 25px;
             margin-top: 30px;
             border-radius: 8px;
         }
@@ -215,11 +256,55 @@
             margin-top: 0;
         }
         
+        .filter-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            background: #e0e0e0;
+            transition: all 0.3s;
+        }
+        
+        .filter-btn.active {
+            color: white;
+        }
+        
+        .filter-btn.critical.active { background: var(--critical); }
+        .filter-btn.high.active { background: var(--high); }
+        .filter-btn.medium.active { background: var(--medium); }
+        .filter-btn.low.active { background: var(--low); }
+        .filter-btn.all.active { background: #1a237e; }
+        
+        .sort-options {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .sort-select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 1rem;
+            background: white;
+        }
+        
         @media (max-width: 768px) {
-            .content-row {
-                flex-direction: column;
-            }
-            
             h1 {
                 font-size: 2.2rem;
             }
@@ -227,47 +312,125 @@
             h2 {
                 font-size: 1.8rem;
             }
+            
+            .risk-summary {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .risk-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .risk-metrics {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .filter-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .sort-options {
+                width: 100%;
+                margin-top: 10px;
+            }
+            
+            .sort-select {
+                flex: 1;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .risk-summary {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-buttons {
+                width: 100%;
+            }
+            
+            .filter-btn {
+                flex: 1;
+                text-align: center;
+            }
+        }
+        
+        .risk-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .tag-probability {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        
+        .tag-impact {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+        
+        .tag-priority {
+            background: #f3e5f5;
+            color: #7b1fa2;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-chart-line"></i> 風險分析矩陣 </h1>
+        <h1>風險分析評估</h1>
         
-        <div class="content-row">
-            <div class="matrix-container">
-                <h2>風險分析矩陣 </h2>
-                <p>基於發生機率與影響程度的專業評估，將風險項目定位於矩陣中</p>
+        <div class="risk-summary">
+            <div class="summary-card critical-count">
+                <div class="summary-value" id="criticalCount">0</div>
+                <div class="summary-label">極高風險項目</div>
+            </div>
+            <div class="summary-card high-count">
+                <div class="summary-value" id="highCount">0</div>
+                <div class="summary-label">高風險項目</div>
+            </div>
+            <div class="summary-card medium-count">
+                <div class="summary-value" id="mediumCount">0</div>
+                <div class="summary-label">中風險項目</div>
+            </div>
+            <div class="summary-card low-count">
+                <div class="summary-value" id="lowCount">0</div>
+                <div class="summary-label">低風險項目</div>
+            </div>
+        </div>
+        
+        <div class="risk-details">
+            <h2>風險項目詳細分析</h2>
+            
+            <div class="filter-container">
+                <div class="filter-buttons">
+                    <button class="filter-btn all active" data-filter="all">全部風險</button>
+                    <button class="filter-btn critical" data-filter="critical">極高風險</button>
+                    <button class="filter-btn high" data-filter="high">高風險</button>
+                    <button class="filter-btn medium" data-filter="medium">中風險</button>
+                    <button class="filter-btn low" data-filter="low">低風險</button>
+                </div>
                 
-                <canvas id="riskMatrix" class="matrix-canvas"></canvas>
-                
-                <div class="legend">
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: var(--critical);"></div>
-                        <span>極高風險 (需立即處理)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: var(--high);"></div>
-                        <span>高風險 (需優先處理)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: var(--medium);"></div>
-                        <span>中風險 (需監控處理)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: var(--low);"></div>
-                        <span>低風險 (可接受)</span>
-                    </div>
+                <div class="sort-options">
+                    <select class="sort-select" id="sortSelect">
+                        <option value="priority">按優先級排序</option>
+                        <option value="score">按風險評分排序</option>
+                        <option value="probability">按發生機率排序</option>
+                        <option value="impact">按影響程度排序</option>
+                    </select>
                 </div>
             </div>
             
-            <div class="risk-details">
-                <h2>風險項目詳細分析</h2>
-                <p>點擊風險項目查看詳細說明</p>
-                
-                <div class="risk-list">
-                    <!-- 風險項目將由JavaScript動態生成 -->
-                </div>
+            <div class="risk-list" id="riskList">
+                <!-- 風險項目將由JavaScript動態生成 -->
             </div>
         </div>
         
@@ -278,8 +441,9 @@
                     <th width="10%">優先級</th>
                     <th width="25%">風險項目</th>
                     <th width="15%">風險評分</th>
-                    <th width="25%">發生機率</th>
-                    <th width="25%">影響程度</th>
+                    <th width="15%">風險等級</th>
+                    <th width="20%">發生機率</th>
+                    <th width="15%">影響程度</th>
                 </tr>
             </thead>
             <tbody id="priorityTableBody">
@@ -288,7 +452,7 @@
         </table>
         
         <div class="pm-notes">
-            <h3><i class="fas fa-lightbulb"></i> 風險評估說明</h3>
+            <h3>風險評估說明</h3>
             <p><strong>評估方法：</strong>綜合考慮以下因素進行風險評分：</p>
             <ul style="margin-left: 20px; margin-top: 10px;">
                 <li><strong>發生機率：</strong>根據專案特性、過往經驗、合約條件評估</li>
@@ -297,7 +461,14 @@
                 <li><strong>緊急性：</strong>需要立即處理的時間壓力</li>
             </ul>
             <p style="margin-top: 15px;"><strong>風險評分計算：</strong>發生機率(1-5分) × 影響程度(1-5分) = 風險評分(1-25分)</p>
-            <p><strong>處理建議：</strong>優先處理風險評分≥12分的項目，並建立監控機制處理評分≥8分的項目。</p>
+            <p><strong>風險等級分類：</strong></p>
+            <ul style="margin-left: 20px; margin-top: 10px;">
+                <li><strong>極高風險 (16-25分)：</strong>需立即處理，可能導致重大損失</li>
+                <li><strong>高風險 (10-15分)：</strong>需優先處理，可能導致顯著損失</li>
+                <li><strong>中風險 (5-9分)：</strong>需監控處理，可能導致中度損失</li>
+                <li><strong>低風險 (1-4分)：</strong>可接受，損失輕微</li>
+            </ul>
+            <p style="margin-top: 15px;"><strong>處理建議：</strong>優先處理風險評分≥12分的項目，並建立監控機制處理評分≥8分的項目。</p>
         </div>
     </div>
     
@@ -372,208 +543,193 @@
             }
         ];
 
-        // 計算風險評分
+        // 計算風險評分和等級
         riskData.forEach(risk => {
             risk.score = risk.probability * risk.impact;
+            risk.level = getRiskLevel(risk.score);
         });
 
-        // 按風險評分排序（從高到低）
-        riskData.sort((a, b) => b.score - a.score);
-
-        // 更新優先級
-        riskData.forEach((risk, index) => {
-            risk.priority = index + 1;
-        });
+        // 按優先級排序（從高到低）
+        riskData.sort((a, b) => a.priority - b.priority);
 
         document.addEventListener('DOMContentLoaded', function() {
-            // 1. 渲染風險矩陣
-            renderRiskMatrix();
-            
-            // 2. 渲染風險項目列表
+            // 初始化
+            updateSummaryCounts();
             renderRiskList();
-            
-            // 3. 渲染優先級表格
             renderPriorityTable();
+            
+            // 設置事件監聽器
+            setupEventListeners();
         });
 
-        function renderRiskMatrix() {
-            const ctx = document.getElementById('riskMatrix').getContext('2d');
+        function updateSummaryCounts() {
+            const criticalCount = riskData.filter(r => r.level === 'critical').length;
+            const highCount = riskData.filter(r => r.level === 'high').length;
+            const mediumCount = riskData.filter(r => r.level === 'medium').length;
+            const lowCount = riskData.filter(r => r.level === 'low').length;
             
-            // 準備數據集
-            const datasets = [
-                // 極高風險區域
-                {
-                    label: '極高風險',
-                    data: riskData.filter(r => r.score >= 15).map(r => ({
-                        x: r.probability,
-                        y: r.impact,
-                        name: r.name,
-                        score: r.score
-                    })),
-                    backgroundColor: '#d32f2f',
-                    borderColor: '#b71c1c',
-                    borderWidth: 2,
-                    pointRadius: 12,
-                    pointHoverRadius: 16
-                },
-                // 高風險區域
-                {
-                    label: '高風險',
-                    data: riskData.filter(r => r.score >= 10 && r.score < 15).map(r => ({
-                        x: r.probability,
-                        y: r.impact,
-                        name: r.name,
-                        score: r.score
-                    })),
-                    backgroundColor: '#f57c00',
-                    borderColor: '#e65100',
-                    borderWidth: 2,
-                    pointRadius: 12,
-                    pointHoverRadius: 16
-                },
-                // 中風險區域
-                {
-                    label: '中風險',
-                    data: riskData.filter(r => r.score >= 5 && r.score < 10).map(r => ({
-                        x: r.probability,
-                        y: r.impact,
-                        name: r.name,
-                        score: r.score
-                    })),
-                    backgroundColor: '#fbc02d',
-                    borderColor: '#f9a825',
-                    borderWidth: 2,
-                    pointRadius: 12,
-                    pointHoverRadius: 16
-                },
-                // 低風險區域
-                {
-                    label: '低風險',
-                    data: riskData.filter(r => r.score < 5).map(r => ({
-                        x: r.probability,
-                        y: r.impact,
-                        name: r.name,
-                        score: r.score
-                    })),
-                    backgroundColor: '#388e3c',
-                    borderColor: '#2e7d32',
-                    borderWidth: 2,
-                    pointRadius: 12,
-                    pointHoverRadius: 16
-                }
-            ];
-
-            new Chart(ctx, {
-                type: 'scatter',
-                data: { datasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: '發生機率 (1=極低, 5=極高)',
-                                font: { size: 16, weight: 'bold' },
-                                color: '#1a237e'
-                            },
-                            min: 0.5,
-                            max: 5.5,
-                            ticks: {
-                                stepSize: 1,
-                                font: { size: 14, weight: 'bold' },
-                                callback: function(value) {
-                                    const labels = ['', '極低', '低', '中等', '高', '極高', ''];
-                                    return labels[value] || '';
-                                }
-                            },
-                            grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: '影響程度 (1=極低, 5=極高)',
-                                font: { size: 16, weight: 'bold' },
-                                color: '#1a237e'
-                            },
-                            min: 0.5,
-                            max: 5.5,
-                            ticks: {
-                                stepSize: 1,
-                                font: { size: 14, weight: 'bold' },
-                                callback: function(value) {
-                                    const labels = ['', '極低', '低', '中等', '高', '極高', ''];
-                                    return labels[value] || '';
-                                }
-                            },
-                            grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                        }
-                    },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const point = context.raw;
-                                    const risk = riskData.find(r => 
-                                        r.probability === point.x && r.impact === point.y
-                                    );
-                                    return risk ? [
-                                        `風險: ${risk.name}`,
-                                        `風險評分: ${risk.score}/25`,
-                                        `發生機率: ${risk.probability}/5`,
-                                        `影響程度: ${risk.impact}/5`,
-                                        `優先級: #${risk.priority}`
-                                    ] : [];
-                                }
-                            }
-                        },
-                        legend: {
-                            position: 'bottom',
-                            labels: { font: { size: 14, weight: 'bold' } }
-                        }
-                    }
-                }
-            });
+            document.getElementById('criticalCount').textContent = criticalCount;
+            document.getElementById('highCount').textContent = highCount;
+            document.getElementById('mediumCount').textContent = mediumCount;
+            document.getElementById('lowCount').textContent = lowCount;
         }
 
-        function renderRiskList() {
-            const riskListContainer = document.querySelector('.risk-list');
+        function renderRiskList(filter = 'all', sortBy = 'priority') {
+            const riskListContainer = document.getElementById('riskList');
+            riskListContainer.innerHTML = '';
             
-            riskData.forEach(risk => {
+            // 過濾風險項目
+            let filteredRisks = riskData;
+            if (filter !== 'all') {
+                filteredRisks = riskData.filter(r => r.level === filter);
+            }
+            
+            // 排序風險項目
+            filteredRisks = sortRisks(filteredRisks, sortBy);
+            
+            // 渲染風險項目
+            filteredRisks.forEach(risk => {
                 const riskElement = document.createElement('div');
-                riskElement.className = `risk-item ${getRiskLevel(risk.score)}`;
+                riskElement.className = `risk-item ${risk.level}`;
+                
+                // 風險標籤
+                const tagsHtml = `
+                    <div style="margin-bottom: 10px;">
+                        <span class="risk-tag tag-priority">優先級: ${risk.priority}</span>
+                        <span class="risk-tag tag-probability">發生機率: ${getProbabilityText(risk.probability)}</span>
+                        <span class="risk-tag tag-impact">影響程度: ${getImpactText(risk.impact)}</span>
+                    </div>
+                `;
+                
                 riskElement.innerHTML = `
-                    <div class="risk-title">
-                        <span>${risk.priority}. ${risk.name}</span>
-                        <span class="risk-score">${risk.score}/25</span>
+                    ${tagsHtml}
+                    <div class="risk-header">
+                        <div class="risk-title">${risk.name}</div>
+                        <div class="risk-score">${risk.score}/25</div>
                     </div>
                     <div class="risk-description">${risk.description}</div>
                     <div class="risk-metrics">
-                        <span>發生機率: ${risk.probability}/5</span>
-                        <span>影響程度: ${risk.impact}/5</span>
-                        <span>風險等級: ${getRiskLevelText(risk.score)}</span>
+                        <div class="metric-item">
+                            <div class="metric-value">${risk.probability}/5</div>
+                            <div class="metric-label">發生機率</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">${risk.impact}/5</div>
+                            <div class="metric-label">影響程度</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">${getRiskLevelText(risk.score)}</div>
+                            <div class="metric-label">風險等級</div>
+                        </div>
                     </div>
                 `;
                 
                 riskElement.addEventListener('click', () => showRiskDetails(risk));
                 riskListContainer.appendChild(riskElement);
             });
+            
+            // 如果沒有風險項目，顯示提示
+            if (filteredRisks.length === 0) {
+                const noResults = document.createElement('div');
+                noResults.className = 'risk-item';
+                noResults.innerHTML = `<div style="text-align: center; padding: 30px; color: #666;">沒有符合條件的風險項目</div>`;
+                riskListContainer.appendChild(noResults);
+            }
         }
 
         function renderPriorityTable() {
             const tableBody = document.getElementById('priorityTableBody');
+            tableBody.innerHTML = '';
             
-            riskData.forEach(risk => {
+            // 按優先級排序
+            const sortedRisks = [...riskData].sort((a, b) => a.priority - b.priority);
+            
+            sortedRisks.forEach(risk => {
                 const row = document.createElement('tr');
+                
+                // 風險等級徽章
+                let levelBadge = '';
+                switch(risk.level) {
+                    case 'critical':
+                        levelBadge = `<span class="risk-level-badge" style="background: var(--critical);">極高風險</span>`;
+                        break;
+                    case 'high':
+                        levelBadge = `<span class="risk-level-badge" style="background: var(--high);">高風險</span>`;
+                        break;
+                    case 'medium':
+                        levelBadge = `<span class="risk-level-badge" style="background: var(--medium);">中風險</span>`;
+                        break;
+                    case 'low':
+                        levelBadge = `<span class="risk-level-badge" style="background: var(--low);">低風險</span>`;
+                        break;
+                }
+                
                 row.innerHTML = `
                     <td><span class="priority-badge priority-${risk.priority}">第${risk.priority}優先</span></td>
                     <td><strong>${risk.name}</strong></td>
                     <td><strong>${risk.score}/25</strong></td>
+                    <td>${levelBadge}</td>
                     <td>${getProbabilityText(risk.probability)} (${risk.probability}/5)</td>
                     <td>${getImpactText(risk.impact)} (${risk.impact}/5)</td>
                 `;
+                
+                // 點擊表格行也可以查看詳細資訊
+                row.style.cursor = 'pointer';
+                row.addEventListener('click', () => showRiskDetails(risk));
+                
                 tableBody.appendChild(row);
             });
+        }
+
+        function setupEventListeners() {
+            // 篩選按鈕事件
+            document.querySelectorAll('.filter-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    // 移除所有按鈕的active類
+                    document.querySelectorAll('.filter-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    
+                    // 為當前按鈕添加active類
+                    this.classList.add('active');
+                    
+                    // 獲取篩選條件
+                    const filter = this.getAttribute('data-filter');
+                    
+                    // 獲取排序選項
+                    const sortBy = document.getElementById('sortSelect').value;
+                    
+                    // 重新渲染風險列表
+                    renderRiskList(filter, sortBy);
+                });
+            });
+            
+            // 排序選項事件
+            document.getElementById('sortSelect').addEventListener('change', function() {
+                // 獲取當前活動的篩選按鈕
+                const activeFilter = document.querySelector('.filter-btn.active');
+                const filter = activeFilter ? activeFilter.getAttribute('data-filter') : 'all';
+                
+                // 重新渲染風險列表
+                renderRiskList(filter, this.value);
+            });
+        }
+
+        function sortRisks(risks, sortBy) {
+            const sortedRisks = [...risks];
+            
+            switch(sortBy) {
+                case 'priority':
+                    return sortedRisks.sort((a, b) => a.priority - b.priority);
+                case 'score':
+                    return sortedRisks.sort((a, b) => b.score - a.score);
+                case 'probability':
+                    return sortedRisks.sort((a, b) => b.probability - a.probability);
+                case 'impact':
+                    return sortedRisks.sort((a, b) => b.impact - a.impact);
+                default:
+                    return sortedRisks;
+            }
         }
 
         function showRiskDetails(risk) {
@@ -593,6 +749,10 @@
                 padding: 20px;
             `;
             
+            // 根據風險等級決定標題顏色
+            let titleColor = risk.color;
+            let levelText = getRiskLevelText(risk.score);
+            
             modal.innerHTML = `
                 <div style="
                     background: white;
@@ -605,7 +765,10 @@
                     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
                 ">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2 style="margin: 0; color: ${risk.color};">${risk.priority}. ${risk.name}</h2>
+                        <div>
+                            <h2 style="margin: 0; color: ${titleColor};">${risk.priority}. ${risk.name}</h2>
+                            <div style="color: #777; margin-top: 5px;">${levelText}</div>
+                        </div>
                         <button id="closeModal" style="
                             background: #ddd;
                             border: none;
@@ -618,28 +781,27 @@
                     </div>
                     
                     <div style="display: flex; gap: 20px; margin-bottom: 25px; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 200px;">
+                        <div style="flex: 1; min-width: 200px; background: #f9f9f9; padding: 20px; border-radius: 8px;">
                             <h3 style="color: #666; font-size: 1.2rem; margin-bottom: 10px;">風險評分</h3>
-                            <div style="font-size: 2.5rem; font-weight: 800; color: ${risk.color};">
+                            <div style="font-size: 2.5rem; font-weight: 800; color: ${titleColor}; text-align: center;">
                                 ${risk.score}/25
                             </div>
-                            <div style="margin-top: 5px; color: #777;">${getRiskLevelText(risk.score)}</div>
                         </div>
                         
-                        <div style="flex: 1; min-width: 200px;">
+                        <div style="flex: 1; min-width: 200px; background: #f9f9f9; padding: 20px; border-radius: 8px;">
                             <h3 style="color: #666; font-size: 1.2rem; margin-bottom: 10px;">發生機率</h3>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <div style="font-size: 2rem; font-weight: 800; color: ${risk.color};">
+                            <div style="display: flex; align-items: center; gap: 10px; justify-content: center;">
+                                <div style="font-size: 2rem; font-weight: 800; color: ${titleColor};">
                                     ${risk.probability}/5
                                 </div>
                                 <div>${getProbabilityText(risk.probability)}</div>
                             </div>
                         </div>
                         
-                        <div style="flex: 1; min-width: 200px;">
+                        <div style="flex: 1; min-width: 200px; background: #f9f9f9; padding: 20px; border-radius: 8px;">
                             <h3 style="color: #666; font-size: 1.2rem; margin-bottom: 10px;">影響程度</h3>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <div style="font-size: 2rem; font-weight: 800; color: ${risk.color};">
+                            <div style="display: flex; align-items: center; gap: 10px; justify-content: center;">
+                                <div style="font-size: 2rem; font-weight: 800; color: ${titleColor};">
                                     ${risk.impact}/5
                                 </div>
                                 <div>${getImpactText(risk.impact)}</div>
@@ -649,21 +811,21 @@
                     
                     <div style="margin-bottom: 25px;">
                         <h3 style="color: #666; font-size: 1.2rem; margin-bottom: 10px;">風險描述</h3>
-                        <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 4px solid ${risk.color};">
+                        <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 4px solid ${titleColor}; line-height: 1.6;">
                             ${risk.description}
                         </div>
                     </div>
                     
                     <div style="margin-bottom: 25px;">
                         <h3 style="color: #666; font-size: 1.2rem; margin-bottom: 10px;">PM評估理由</h3>
-                        <div style="background: #e8f5e9; padding: 15px; border-radius: 8px;">
+                        <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; line-height: 1.6;">
                             ${risk.reasons}
                         </div>
                     </div>
                     
                     <div>
                         <h3 style="color: #666; font-size: 1.2rem; margin-bottom: 10px;">因應對策</h3>
-                        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px;">
+                        <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; line-height: 1.6;">
                             ${risk.mitigation}
                         </div>
                     </div>
@@ -689,14 +851,14 @@
 
         // 輔助函數
         function getRiskLevel(score) {
-            if (score >= 15) return 'critical';
+            if (score >= 16) return 'critical';
             if (score >= 10) return 'high';
             if (score >= 5) return 'medium';
             return 'low';
         }
         
         function getRiskLevelText(score) {
-            if (score >= 15) return '極高風險 (需立即處理)';
+            if (score >= 16) return '極高風險 (需立即處理)';
             if (score >= 10) return '高風險 (需優先處理)';
             if (score >= 5) return '中風險 (需監控處理)';
             return '低風險 (可接受)';
